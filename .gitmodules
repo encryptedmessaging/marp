@@ -1,0 +1,9 @@
+[submodule "util/micro-ecc"]
+	path = util/micro-ecc
+	url = https://github.com/kmackay/micro-ecc.git
+[submodule "util/OpenAES"]
+	path = util/OpenAES
+	url = https://code.google.com/p/openaes/
+[submodule "util/libsha2"]
+	path = util/libsha2
+	url = https://github.com/routar/C-SHA2.git
