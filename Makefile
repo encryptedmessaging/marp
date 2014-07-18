@@ -3,18 +3,18 @@
 
 CC=gcc 
 CFLAGS=-pthread -m64 -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
-# DEVFLAGS=
-DEVFLAGS=-O0 -g
-PRODFLAGS=
-# PRODFLAGS=-O3 -NDEBUG 
+DEVFLAGS= -O3 -DNDEBUG
 LDFLAGS=
 
 # Object Files
 %.o: %.c
-	$(CC) $(CFLAGS) $(DEVFLAGS) $(PRODFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEVFLAGS) -c $< -o $@
 
 # Main Targets
 all: marpd
+
+dev: DEVFLAGS=-O0 -g
+dev: all
 
 marpd: marpd.o frame.o network/socket.o
 	$(CC) $(LDFLAGS) *.o */*.o -o $@
