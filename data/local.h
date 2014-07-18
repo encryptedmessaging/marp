@@ -8,18 +8,17 @@
 #define LOCAL_H
 
 #define SHA256_SIZE 32
-#define ECC_SIZE 32
 
 int Local_init(char* configFile);
 
-char* Local_get(char[32] hash, uint16_t protocol);
+char* Local_get(char hash[SHA256_SIZE], uint16_t protocol);
 
-char[1 + 2*ECC_SIZE] Local_getPubkey();
+char* Local_getPubkey(void);
 
-char[ECC_SIZE] Local_getPrivkey();
+char* Local_getPrivkey(void);
 
-int Local_getTTL(char[32] hash);
+int Local_getTTL(char hash[SHA256_SIZE]);
 
-void Local_destroy();
+void Local_destroy(void);
 
 #endif

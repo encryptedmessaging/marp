@@ -9,7 +9,7 @@
 #define RECURSOR_H
 
 /* Socket struct, holds QID-Address table and UDP information */
-typedef *struct recursor Recursor_T
+typedef struct recursor *Recursor_T;
 
 Recursor_T Recursor_init(void* data, size_t len, int peers, int timeout);
 

@@ -12,18 +12,18 @@
 #include "network/recursor.h"
 
 #include "data/cache.h"
-#include "data/locl.h"
+#include "data/local.h"
 
 /* Holds Frame header and payload. */
-typedef *struct frame Frame_T
+typedef struct frame *Frame_T;
 
 /**
- * Frame_T Frame_init()
+ * Frame_T Frame_init(void)
  * Allocates a new Frame in the heap. 
  * @param: None
  * @return: An empty Frame or NULL on error, with errno set.
  **/
-Frame_T Frame_init();
+Frame_T Frame_init(void);
 
 /**
  * int Frame_listen(Frame_T, Socket_T)

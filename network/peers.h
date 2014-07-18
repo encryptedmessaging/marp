@@ -7,6 +7,8 @@
 #ifndef PEERS_H
 #define PEERS_H
 
+#include <stdint.h>
+
 /** Peer Object **/
 struct peer {
   /* Remote IP Address */
@@ -15,16 +17,16 @@ struct peer {
   uint16_t port;
 };
 
-typedef *struct peer Peer_T;
+typedef struct peer *Peer_T;
 
 int Peers_init(char* peerFile);
 
 int Peers_dump(char* peerFile);
 
-Peer_T Peers_random();
+Peer_T Peers_random(void);
 
 int Peers_add(char* ip, uint16_t port);
 
-void Peers_destroy();
+void Peers_destroy(void);
 
 #endif

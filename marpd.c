@@ -5,7 +5,7 @@
  **/
 
 /* Standard Libraries */
-#include <stddef.h>
+#include <stdlib.h>
 
 /* Local Files */
 #include "frame.h"

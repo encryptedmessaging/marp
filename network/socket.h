@@ -8,10 +8,12 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-/* Socket struct, holds QID-Address table and UDP information */
-typedef *struct socket Socket_T
+#include <stdint.h>
 
-Socket_T Socket_init();
+/* Socket struct, holds QID-Address table and UDP information */
+typedef struct socket *Socket_T;
+
+Socket_T Socket_init(void);
 
 int Socket_read(Socket_T socket, void* buf, size_t len);
 
