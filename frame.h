@@ -14,6 +14,9 @@
 #include "data/cache.h"
 #include "data/local.h"
 
+#include "object/query.h"
+#include "object/response.h"
+
 /* Holds Frame header and payload. */
 typedef struct frame *Frame_T;
 
