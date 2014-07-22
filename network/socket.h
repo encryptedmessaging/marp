@@ -28,9 +28,10 @@ Socket_T Socket_init(uint16_t port);
  * @param socket: from which to read
  * @param buf: Data is read into this buffer.
  * @param len: The maximum size of the datagram to store.
+ * @param timeout: How long to wait for data (seconds)
  * @return number of bytes read on success, -1 on failure
  **/
-int Socket_read(Socket_T socket, void* buf, size_t len);
+int Socket_read(Socket_T socket, void* buf, size_t len, int timeout);
 
 /**
  * int Socket_respond(Socket_T, void*, size_t)
@@ -41,7 +42,7 @@ int Socket_read(Socket_T socket, void* buf, size_t len);
  * @param len: Length of the buffer
  * @return number of bytes written on success, -1 on failure
  **/
-int Socket_respond(Socket_T socket, void* buf, size_t len);
+int Socket_respond(Socket_T socket, const void* buf, size_t len);
 
 /**
  * int Socket_write(Socket_T, char*, uint16_t, void*, size_t)

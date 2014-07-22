@@ -34,7 +34,7 @@ Frame_T Frame_init(void);
  * @param dest: Frame to fill, all contents will be overwritten
  * @param socket: Where to listen for data. Must not be NULL.
  * @param timeout: How long to wait, set to 0 to disable.
- * @param return: 0 on Success, -1 on Failure or Timeout
+ * @return: 0 on Success, -1 on Failure or Timeout
  **/
 int Frame_listen(Frame_T dest, Socket_T socket, int timeout);
 
