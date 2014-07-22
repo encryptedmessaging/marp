@@ -11,11 +11,14 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "signal.h"
+
 extern char* programName;
 extern volatile bool isRunning;
 
 /* Signal Handler Function */
 static void handler(int signal) {
+  putchar('\n');
   isRunning = false;
 }
 
@@ -34,7 +37,7 @@ int Signal_init(void) {
   /* Ensure signal is unblocked */
   sigemptyset(&sSet);
   sigaddset(&sSet, SIGINT);
-  ret = sigprocmask(SIG_UNBLOCK, &sSet, NULL); 
+  error = sigprocmask(SIG_UNBLOCK, &sSet, NULL); 
 
   if (error) {
     perror(programName);

@@ -32,8 +32,17 @@ int main(int argc, char** argv) {
   Socket_T socket = NULL;
   int error = 0;
 
+  isRunning = true;
+
   /* Globalize program name. */
   programName = argv[0];
+
+  /* Initialize Signals */
+  error = Signal_init();
+  if (error < 0) {
+    fprintf(stderr, "%s: main: Could not initialize Signal Handler.", programName);
+    return EXIT_FAILURE;
+  }
 
   /* Initialize Local Configuration File */
 
@@ -67,6 +76,8 @@ int main(int argc, char** argv) {
       }
     }
   }
+
+  printf("Exiting...\n");
 
   /* Destroy Server UDP Socket */
   Socket_free(socket);

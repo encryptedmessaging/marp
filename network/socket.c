@@ -79,7 +79,7 @@ Socket_T Socket_init(uint16_t port) {
  * @param buf: Data is read into this buffer.
  * @param len: The maximum size of the datagram to store.
  * @param timeout: How long to wait for data (seconds)
- * @return number of bytes read on success, -1 on failure
+ * @return number of bytes read on success, negative on failure
  **/
 int Socket_read(Socket_T socket, void* buf, size_t len, int timeout) {
   struct timeval tv;
