@@ -25,14 +25,14 @@ Query_T Query_init(void* buf, size_t bufLen);
  * @param query: to get the ID of
  * @return the 32-byte hash associated with this query.
  **/
-char (*Query_id(Query_T query))[SHA256_SIZE];
+char *Query_id(Query_T query);
 
 /**
  * uint16_t Query_protocols(Query_T)
  * @param query: to get the protocol list
  * @return: 0-terminated list of protocol identifiers
  **/
-uint16_t* Query_protocols(Query_T query);
+const uint16_t* Query_protocols(Query_T query);
 
 /**
  * char* Query_host(Query_T)

@@ -16,7 +16,7 @@ all: marpd
 dev: DEVFLAGS=-O0 -g
 dev: all
 
-marpd: marpd.o frame.o signal.o network/socket.o
+marpd: marpd.o frame.o signal.o network/socket.o object/query.o
 	$(CC) $(LDFLAGS) *.o */*.o -o $@
 
 # Phony Targets
