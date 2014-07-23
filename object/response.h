@@ -24,13 +24,13 @@ Response_T Response_init(void* buf, size_t bufLen);
  * char[32] Response_id(Response_T)
  * @return Hash associated with @param response
  **/
-char (*Response_id(Response_T response))[SHA256_SIZE];
+char* Response_id(Response_T response);
 
 /**
- * uint16_t* Response_protocols(Response_T)
- * @return 0-terminated protocol array associated wtih @param response
- **/
-uint16_t* Response_protocols(Response_T response);
+ * int Response_recordCount(Response_T)
+ * @return Number of records associated with @param response
+**/
+int Response_recordCount(Response_T response);
 
 /**
  * int Response_merge(Response_T, Response_T)
