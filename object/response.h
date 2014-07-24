@@ -36,6 +36,8 @@ int Response_recordCount(Response_T response);
  * int Response_merge(Response_T, Response_T)
  * Add all records from @param src to @param dest, re-writing records if
  * there are conflicts that must be resolved via the Timestamp.
+ * Note: If either response is authoritative, no merging takes place, and dest is overwritten
+ * with the authoritative response.
  * @see MARP v1 Specification for tie-breaker rules.
  * @return the number of records modified or added to @param dest
  **/
