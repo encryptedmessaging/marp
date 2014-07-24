@@ -13,13 +13,6 @@
 #define SHA256_SIZE 32
 
 /**
- * int Cache_init(void)
- * Initialize an empty, in-memory cache.
- * @return 0 on success, negative on failure.
- **/
-int Cache_init(void);
-
-/**
  * int Cache_dump(char*)
  * @param cacheFile: Serialize and dump the in-memory cache to file (2GB max)
  * @return number of cache entries written on success, negative on failure
@@ -49,9 +42,9 @@ int Cache_addUpdate(char hash[SHA256_SIZE], uint16_t protocol, void* record, siz
  * Note: The returned buffer is a freshly allocated copy and must be freed by the caller.
  * @param hash, protocol: used to identify the cache entry
  * @param recordLen: value-parameter, is filled with the size of the return value if not NULL
- * @return pointer to the cache entry buffer.
+ * @return pointer to the cache entry buffer, DO NOT FREE!
  **/
-void* Cache_get(char hash[SHA256_SIZE], uint16_t protocol, size_t* recordLen);
+const void* Cache_get(char hash[SHA256_SIZE], uint16_t protocol, size_t* recordLen);
 
 /**
  * void Cache_destroy(void)

@@ -18,7 +18,7 @@
 
 extern char* programName;
 
-#include "uthash.h"
+#include "../uthash.h"
 #include "socket.h"
 
 /* Socket struct, holds QID-Address table and UDP information */
