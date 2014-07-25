@@ -75,7 +75,8 @@ int Cache_dump(const char* cacheFile) {
  * @return number of cache entries read on success, or negative on failure
  **/
 int Cache_load(const char* cacheFile) {
-  int fd;
+  int fd, error, count;
+  cache *newCache, *replaced;
 
   /* Open File */
   fd = open(cacheFile, O_RDONLY);
@@ -84,7 +85,48 @@ int Cache_load(const char* cacheFile) {
     return fd;
   }
 
-  return EXIT_SUCCESS;
+  count = 0;
+
+  while (1) {
+    /* Make buffer for reading. */
+    newCache = calloc(1, sizeof(cache));
+    if (newCache == NULL) break;
+    newCache->id = calloc(SHA256_SIZE + sizeof(uint16_t), sizeof(char));
+    if (newCache->id == NULL) { free(newCache); break; }
+
+    /* Read id and bufLen */
+    error = read(fd, newCache->id, SHA256_SIZE + sizeof(uint16_t));
+    if (error < SHA256_SIZE + sizeof(uint16_t)) {
+      if (error < 0) perror(programName);
+      free(newCache->id); free(newCache); break;
+    }
+    error = read(fd, &(newCache->bufLen), sizeof(size_t));
+    if (error < sizeof(size_t)) {
+      if (error < 0) perror(programName);
+      free(newCache->id); free(newCache); break;
+    }
+
+    /* Create and fill buffer */
+    newCache->buf = calloc(newCache->bufLen, sizeof(char));
+    if (newCache->buf == NULL) {
+      free(newCache->id); free(newCache); break;
+    }
+
+    error = read(fd, newCache->buf, newCache->bufLen);
+    if (error < newCache->bufLen) {
+      if (error < 0) perror(programName);
+      free(newCache->buf); free(newCache->id); free(newCache); break;
+    }
+
+    /* Add to Hash Table */
+    HASH_REPLACE(hh, memCache, id[0], sizeof(cache), newCache, replaced);
+    if (replaced != NULL) {
+      free(replaced->buf); free(replaced->id); free(replaced);
+    }
+  }
+
+  close(fd);
+  return count;
 }
 
 /**
