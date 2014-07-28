@@ -43,7 +43,7 @@ const char* Local_getPrivkey(void);
  * @param hash: The <handle>@<host> entry associated with the TTL
  * @return The TTL of all records at this hash in seconds.
  **/
-int Local_getTTL(char hash[SHA256_SIZE]);
+int Local_getTTL(char hash[SHA256_SIZE], uint16_t protocol);
 
 /**
  * void Local_destory(void)
