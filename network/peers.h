@@ -10,16 +10,6 @@
 #include <stdint.h>
 #include <sys/socket.h>
 
-/** Peer Object **/
-struct peer {
-  /* Remote IP Address */
-  char* ip;
-  /* Remote Port */
-  uint16_t port;
-  /* Sockaddr Struct for socket.h calls */
-  struct sockaddr socket_address;
-};
-
 typedef struct peer *Peer_T;
 
 /**
@@ -45,13 +35,19 @@ int Peers_dump(char* peerFile);
 Peer_T Peers_random(void);
 
 /**
+ * struct sockaddr Peers_socket(Peer_T);
+ * @return Socket associated with @param peer
+ **/
+struct sockaddr* Peers_socket(Peer_T peer);
+
+/**
  * int Peers_add(char*, uint16_t)
  * Add peer to known peers.
  * @param ip: A valid ipv4 or ipv6 address
  * @param port: Valid port number
  * @return: 0 on success, negative on failure
  **/
-int Peers_add(char* ip, uint16_t port);
+int Peers_add(const char* ip, uint16_t port);
 
 /**
  * int Peers_drop(Peer_T peer)

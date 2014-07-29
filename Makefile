@@ -19,7 +19,7 @@ dev: all
 data/inih/inih.o:
 	make default -C data/inih
 
-marpd: data/inih/ini.o marpd.o frame.o signal.o network/socket.o object/query.o object/response.o data/cache.o
+marpd: data/inih/ini.o marpd.o frame.o signal.o network/socket.o object/query.o object/response.o data/cache.o data/local.o network/peers.o libsha2/sha256.o
 	$(CC) $(LDFLAGS) $< *.o */*.o -o $@
 
 # Phony Targets

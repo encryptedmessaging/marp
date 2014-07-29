@@ -7,3 +7,6 @@
 [submodule "util/libsha2"]
 	path = util/libsha2
 	url = https://github.com/routar/C-SHA2.git
+[submodule "libsha2"]
+	path = libsha2
+	url = https://github.com/routar/C-SHA2.git

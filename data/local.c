@@ -12,7 +12,8 @@
 #include <errno.h>
 
 #include "../uthash.h"
-#include "../util/libsha2/sha256.h"
+#include "inih/ini.h"
+#include "../libsha2/sha256.h"
 #include "local.h"
 
 /* Individual Local Entry, Placed in Hash Table */
@@ -115,7 +116,7 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   (void)strcat(handleAtHost, "@");
   (void)strcat(handleAtHost, host->host);
 
-  sha256_simple((uint8_t*)handleAtHost, strlen(handleAtHost), id);
+  sha256_simple((uint8_t*)handleAtHost, strlen(handleAtHost), (uint8_t*)id);
   memcpy(&(id[SHA256_SIZE]), &protocol, sizeof(uint16_t));
   free(handleAtHost);
 
@@ -163,7 +164,7 @@ static int handler(void* nada, const char* section, const char* name, const char
   struct sHost host;
   /* Global Configuration */
   if (strcmp(section, "global")) {
-    if (strcmp(name, "pubkey"))
+    if (strcmp(name, "pubkey")) {
       if (config->pubkey) {
         return -1;
       } else {
@@ -171,7 +172,8 @@ static int handler(void* nada, const char* section, const char* name, const char
         if (config->pubkey == NULL) return -1;
         strcpy(config->pubkey, value);
       }
-    if (strcmp(name, "privkey"))
+    }
+    if (strcmp(name, "privkey")) {
       if (config->privkey) {
         return -1;
       } else {
@@ -179,8 +181,9 @@ static int handler(void* nada, const char* section, const char* name, const char
         if (config->privkey == NULL) return -1;
         strcpy(config->privkey, value);
       }
+    }
     /* Names Configuration */
-    if (strcmp(name, "names") == 0)
+    if (strcmp(name, "names") == 0) {
       if (ini_parse(value, nameHandler, NULL) < 0) {
         fprintf(stderr, "%s: Error parsing names file %s: %s", programName, value, strerror(errno));
         /* Free Protocols */
@@ -192,6 +195,7 @@ static int handler(void* nada, const char* section, const char* name, const char
         protocols = NULL;
         return -1;
       }
+    }
   }
 
   /* Host Configuration */
