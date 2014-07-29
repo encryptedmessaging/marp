@@ -27,7 +27,7 @@ Recursor_T Recursor_init(void* data, size_t len, int peers, int timeout);
  * @param retLen (value): Writes with length of returned buffer.
  * @return Data received from network, or NULL on timeout / all responses received
  **/
-void* Recursor_poll(Recursor_T recursor, size_t* retLen);
+const void* Recursor_poll(Recursor_T recursor, size_t* retLen);
 
 /**
  * void Recursor_Timeout(Recursor_T)
