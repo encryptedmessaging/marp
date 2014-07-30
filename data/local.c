@@ -22,8 +22,9 @@ typedef struct entry {
   /* Concatonated SHA256('handle@host') + protocol */
   char* id;
 
-  /* Plaintext Address */
+  /* Encrypted Address */
   char* encrypted;
+  size_t encLen;
 
   /* TTL either from section or host */
   int ttl;
@@ -73,6 +74,7 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   entry* newEntry;
   entry* dummy;
   uint8_t key[SHA256_SIZE];
+  OAES_CTX * ctx;
   struct sHost* host = (struct sHost*)hostPtr;
 
   /* Check protocols */
@@ -135,7 +137,18 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
 
   newEntry->id = id;
 
-  OAES_CTX * ctx = oaes_alloc();
+  ctx = oaes_alloc();
+
+  oaes_key_import_data(ctx, key, SHA256_SIZE);
+  oaes_encrypt(ctx, (const uint8_t*)value, strlen(value), NULL, &(newEntry->encLen));
+  newEntry->encrypted = calloc(newEntry->encLen, sizeof(char));
+  if (newEntry->encrypted == NULL) {
+    free(newEntry->id);
+    free(newEntry);
+    oaes_free(&ctx);
+    return -1;
+  }
+  oaes_encrypt(ctx, (const uint8_t*)value, strlen(value), (uint8_t*)newEntry->encrypted, &(newEntry->encLen));
 
   if (host->sectionTTL)
     newEntry->ttl = host->sectionTTL;
@@ -148,6 +161,7 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
     free(dummy);
   }
 
+  oaes_free(&ctx);
   return 0;
 }
  
