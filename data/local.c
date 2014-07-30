@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <oaes_lib.h>
 
 #include "../uthash.h"
 #include "inih/ini.h"
@@ -22,7 +23,7 @@ typedef struct entry {
   char* id;
 
   /* Plaintext Address */
-  const char* plaintext;
+  char* encrypted;
 
   /* TTL either from section or host */
   int ttl;
@@ -71,6 +72,7 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   char* id;
   entry* newEntry;
   entry* dummy;
+  uint8_t key[SHA256_SIZE];
   struct sHost* host = (struct sHost*)hostPtr;
 
   /* Check protocols */
@@ -120,7 +122,8 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   (void)strcat(handleAtHost, "@");
   (void)strcat(handleAtHost, host->host);
 
-  sha256_simple((uint8_t*)handleAtHost, strlen(handleAtHost), (uint8_t*)id);
+  sha256_simple((uint8_t*)handleAtHost, strlen(handleAtHost), key);
+  sha256_simple(key, SHA256_SIZE, (uint8_t*)id);
   memcpy(&(id[SHA256_SIZE]), &protocol, sizeof(uint16_t));
   free(handleAtHost);
 
@@ -131,7 +134,9 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   }
 
   newEntry->id = id;
-  newEntry->plaintext = value;
+
+  OAES_CTX * ctx = oaes_alloc();
+
   if (host->sectionTTL)
     newEntry->ttl = host->sectionTTL;
   else newEntry->ttl = host->hostTTL;
@@ -272,7 +277,7 @@ const char* Local_get(char hash[SHA256_SIZE], uint16_t protocol) {
     return NULL;
   }
 
-  return record->plaintext;
+  return record->encrypted;
 }
 
 /**

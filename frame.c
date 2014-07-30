@@ -176,7 +176,18 @@ enum {
  * @return None
  **/
 static void Frame_responseSTD(Frame_T frame, Frame_T response) {
-  return; /* TODO: Currently an Echo Server */
+  Query_T query;
+  /* Parse Query */
+  query = Query_init(frame->payload, frame->sHeader.length);
+  if (query == NULL) {
+    response->sHeader.op = kMAL;
+    return;
+  }
+
+  
+  
+  Query_free(query);
+  return;
 }
 
 /**

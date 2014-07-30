@@ -10,3 +10,6 @@
 [submodule "libsha2"]
 	path = libsha2
 	url = https://github.com/routar/C-SHA2.git
+[submodule "oaes"]
+	path = oaes
+	url = https://code.google.com/p/openaes/

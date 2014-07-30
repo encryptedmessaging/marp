@@ -20,8 +20,8 @@ int Local_init(const char* configFile);
 /**
  * char* Local-get(char[32], uint16_t)
  * @param hash, protocol: Used as record identification.
- * @return Case 1: If the hash is a <handle>@<host> combination, return the plaintext address
- * @return Case 2: If the hash is an address, return the plaintext <handle>@<host>
+ * @return Case 1: If the hash is a <handle>@<host> combination, return the encrypted address
+ * @return Case 2: If the hash is an address, return the encrypted <handle>@<host>
  * @return NULL on miss
  **/
 const char* Local_get(char hash[SHA256_SIZE], uint16_t protocol);
