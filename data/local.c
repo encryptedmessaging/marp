@@ -359,6 +359,7 @@ void Local_destroy(void) {
     HASH_ITER(hh, config->localCache, current, tmp) {
       HASH_DEL(config->localCache, current);
       if (current->id) free(current->id);
+      if (current->encrypted) free(current->encrypted);
       free(current);
     }
 

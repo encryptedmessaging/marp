@@ -53,30 +53,36 @@ int main(int argc, char** argv) {
   /* Initialize Signals */
   error = Signal_init();
   if (error < 0) {
-    fprintf(stderr, "%s: main: Could not initialize Signal Handler.", programName);
+    fprintf(stderr, "%s: main: Could not initialize Signal Handler.\n", programName);
     return EXIT_FAILURE;
   }
+  printf("%s: main: Initialized Signals...\n", programName);
 
   /* Initialize Local Configuration File */
   error = Local_init("config/marp.conf");
   if (error < 0) {
-    fprintf(stderr, "%s: main: Could not initialize local config.", programName);
+    fprintf(stderr, "%s: main: Could not initialize local config.\n", programName);
     return EXIT_FAILURE;
   }
+  printf("%s: main: Config File Parsed...\n", programName);
 
   /* Initialize In-Memory Cache */
   error = Cache_load("config/cache.dat");
   if (error < 0) {
-    fprintf(stderr, "%s: main: Could not initialize local cache.", programName);
+    fprintf(stderr, "%s: main: Could not initialize local cache.\n", programName);
     return EXIT_FAILURE;
   }
+  printf("%s: main: Loaded %d cache entries from config/cache.dat...\n", programName, error);
 
   /* Initialize Server UDP Socket */
   socket = Socket_init(PORT);
   if (socket == NULL) {
-    fprintf(stderr, "%s: main: Could not initialize socket.", programName);
+    fprintf(stderr, "%s: main: Could not initialize socket.\n", programName);
     return EXIT_FAILURE;
   }
+  printf("%s: main: Server started on port %d...\n", programName, PORT);
+
+  fflush(stdout);
 
   /* Main Loop */
   while (isRunning) {
