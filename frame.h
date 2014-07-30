@@ -7,6 +7,8 @@
 #ifndef FRAME_H
 #define FRAME_H
 
+#include <pthread.h>
+
 /* Local files */
 #include "network/socket.h"
 #include "network/recursor.h"
@@ -44,9 +46,9 @@ int Frame_listen(Frame_T dest, Socket_T socket, int timeout);
  * Note: The provided frame is automatically de-allocated.
  * @param frame: Must be an alread-filled frame.
  * @param socket: Must be an already connected or bound socket.
- * @return: The pthread identification number, or -1 on failure.
+ * @return: The pthread pointer on success, or NULL on failure.
  **/
-int Frame_respond(Frame_T frame, Socket_T socket);
+pthread_t* Frame_respond(Frame_T frame, Socket_T socket);
 
 /**
  * void Frame_free(Frame_T)

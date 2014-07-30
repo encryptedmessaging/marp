@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "cache.h"
 #include "../uthash.h"
@@ -38,9 +39,9 @@ int Cache_dump(const char* cacheFile) {
   int fd, error, count;
   
   /* Open File */
-  fd = creat(cacheFile, O_WRONLY);
+  fd = creat(cacheFile, 0600);
   if (fd < 0) {
-    perror(programName);
+    fprintf(stderr, "%s: Cache_dump: %s\n", programName, strerror(errno));
     return fd;
   }
 
@@ -59,7 +60,7 @@ int Cache_dump(const char* cacheFile) {
     error = write(fd, copy, SHA256_SIZE + sizeof(uint16_t) + sizeof(size_t) + current->bufLen);
     free(copy);
     if (error < 0) {
-      perror(programName);
+      fprintf(stderr, "%s: Cache_dump: %s\n", programName, strerror(errno));
       close(fd);
       return error;
     }
@@ -81,8 +82,8 @@ int Cache_load(const char* cacheFile) {
   /* Open File */
   fd = open(cacheFile, O_RDONLY);
   if (fd < 0) {
-    perror(programName);
-    return fd;
+    fprintf(stderr, "%s: Cache_load: %s\n", programName, strerror(errno));
+    return 0;
   }
 
   count = 0;
@@ -97,12 +98,12 @@ int Cache_load(const char* cacheFile) {
     /* Read id and bufLen */
     error = read(fd, newCache->id, SHA256_SIZE + sizeof(uint16_t));
     if (error < SHA256_SIZE + sizeof(uint16_t)) {
-      if (error < 0) perror(programName);
+      if (error < 0) fprintf(stderr, "%s: Cache_load: %s\n", programName, strerror(errno));
       free(newCache->id); free(newCache); break;
     }
     error = read(fd, &(newCache->bufLen), sizeof(size_t));
     if (error < sizeof(size_t)) {
-      if (error < 0) perror(programName);
+      if (error < 0) fprintf(stderr, "%s: Cache_load: %s\n", programName, strerror(errno));
       free(newCache->id); free(newCache); break;
     }
 
@@ -114,7 +115,7 @@ int Cache_load(const char* cacheFile) {
 
     error = read(fd, newCache->buf, newCache->bufLen);
     if (error < newCache->bufLen) {
-      if (error < 0) perror(programName);
+      if (error < 0) fprintf(stderr, "%s: Cache_load: %s\n", programName, strerror(errno));
       free(newCache->buf); free(newCache->id); free(newCache); break;
     }
 

@@ -73,6 +73,9 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   entry* dummy;
   struct sHost* host = (struct sHost*)hostPtr;
 
+  /* Check protocols */
+  if (protocols == NULL) return -1;
+
   /* Check for Global Section */
   if (strcmp(section, "global") == 0) {
     if (strcmp(name, "TTL") == 0)
@@ -97,12 +100,13 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   if (id == NULL) return -1;
   
   /* Find Protocol */
-  for (protocol = 0; protocol < sizeof(uint8_t); protocol++) {
+  for (protocol = 1; protocol < PROTO_MAX; protocol++) {
+    if (protocols[protocol] == NULL) continue;
     if (strcmp(name, protocols[protocol]) == 0) break;
   }
 
-  if (protocol == sizeof(uint8_t)) {
-    fprintf(stderr, "%s: Protocols %s not supported yet.", programName, name);
+  if (protocol == PROTO_MAX) {
+    fprintf(stderr, "%s: Protocol %s not supported yet.\n", programName, name);
     free(id); return -1;
   }
   
@@ -148,8 +152,8 @@ static int nameHandler(void* nada, const char* section, const char* name, const 
   if (strcmp(section, "name") != 0) return -1;
   
   protocol = atoi(value);
-  if (protocol > sizeof(uint8_t)) {
-    fprintf(stderr, "%s: Protocol #%s not supported yet.", programName, value);
+  if (protocol > PROTO_MAX) {
+    fprintf(stderr, "%s: Protocol #%s not supported yet.\n", programName, value);
     return -1;
   }
   
@@ -163,8 +167,8 @@ static int nameHandler(void* nada, const char* section, const char* name, const 
 static int handler(void* nada, const char* section, const char* name, const char* value) {
   struct sHost host;
   /* Global Configuration */
-  if (strcmp(section, "global")) {
-    if (strcmp(name, "pubkey")) {
+  if (strcmp(section, "global") == 0) {
+    if (strcmp(name, "pubkey") == 0) {
       if (config->pubkey) {
         return -1;
       } else {
@@ -173,7 +177,7 @@ static int handler(void* nada, const char* section, const char* name, const char
         strcpy(config->pubkey, value);
       }
     }
-    if (strcmp(name, "privkey")) {
+    if (strcmp(name, "privkey") == 0) {
       if (config->privkey) {
         return -1;
       } else {
@@ -184,8 +188,12 @@ static int handler(void* nada, const char* section, const char* name, const char
     }
     /* Names Configuration */
     if (strcmp(name, "names") == 0) {
+      protocols = calloc(PROTO_MAX, sizeof(char*));
+      if (protocols == NULL) {
+        return -1;
+      }
       if (ini_parse(value, nameHandler, NULL) < 0) {
-        fprintf(stderr, "%s: Error parsing names file %s: %s", programName, value, strerror(errno));
+        fprintf(stderr, "%s: Error parsing names file %s: %s\n", programName, value, strerror(errno));
         /* Free Protocols */
         int i;
         for (i = 0; i < PROTO_MAX; i++) {
@@ -228,11 +236,7 @@ int Local_init(const char* configFile) {
   if (config == NULL) return -1;
   
   config->localCache = NULL;
-  protocols = calloc(PROTO_MAX, sizeof(char*));
-  if (protocols == NULL) {
-    free(config); return -1;
-  }
-
+  
   /* Parse File */
   if (ini_parse(configFile, handler, NULL) < 0) {
     /* Failure, destroy evrything! */
