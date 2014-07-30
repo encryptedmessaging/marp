@@ -87,6 +87,8 @@ int Socket_read(Socket_T socket, void* buf, size_t len, int timeout) {
   socklen_t socklen;
   uint32_t qid;
   kvQid *kvqid, *k;
+  k = NULL;
+  kvqid = NULL;
 
   assert(socket != NULL);
   assert(buf != NULL);
@@ -128,6 +130,7 @@ int Socket_read(Socket_T socket, void* buf, size_t len, int timeout) {
     qid = ntohl(qid);
 
     /* Check if QID exists already. */
+    k = NULL;
     HASH_FIND_INT(socket->hashmap, &qid, k);  /* qid already in the hash? If so, ignore datagram. */
     if (k != NULL) {
       /* Already exists! Don't add to hash table. */

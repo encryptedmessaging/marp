@@ -75,6 +75,7 @@ int Frame_listen(Frame_T dest, Socket_T socket, int timeout) {
 
   error = Socket_read(socket, (void*)buf, FRAME_MAX, timeout);
   if (error < 0) {
+    free(buf);
     return error;
   } else if (error < sizeof(dest->sHeader)) {
     fprintf(stderr, "%s: Received too small frame from socket.", programName);
