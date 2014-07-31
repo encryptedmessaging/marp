@@ -284,6 +284,90 @@ void Response_free(Response_T response) {
   free(response);
 } /* End Response_free() */
 
+/**
+ * const void* Response_getRecord(uint16_t, size_t)
+ * @param protocol: identifies the record, in Host Byte Order
+ * @param length: overwritten with the return buffer's length
+ * @return a constant buffer for the record, that MUST BE FREED!
+ **/
+const void* Response_getRecord(Response_T response, uint16_t protocol, size_t* length) {
+  uint8_t* ret;
+  int i;
+  uint16_t placeholder;
+  uint64_t bigPlaceholder;
+  assert(response != NULL);
+  assert(length != NULL);
+
+  for (i = 0; i < response->recordCount; i++) {
+    if (response->records[i].protocol == protocol) {
+      /* Serialize and Return */
+      *length = sizeof(struct record) + response->records[i].length;
+      ret = calloc(*length, sizeof(char));
+      if (ret == NULL) return NULL;
+
+      placeholder = htons(response->records[i].protocol);
+      memcpy(ret, &placeholder, sizeof(uint16_t));
+
+      placeholder = htons(response->records[i].length);
+      memcpy(&(ret[sizeof(uint16_t)]), &placeholder,sizeof(uint16_t));
+      
+      memcpy(&(ret[2*sizeof(uint16_t)]), &response->records[i].encrypted, response->records[i].length);
+      
+      placeholder = htons(response->records[i].ttl);
+      memcpy(&(ret[2*sizeof(uint16_t) + response->records[i].length]), &placeholder,sizeof(uint16_t));
+
+      bigPlaceholder = htonll((uint64_t)response->records[i].timestamp);
+      memcpy(&(ret[*length - sizeof(uint64_t)]), &bigPlaceholder, sizeof(uint64_t));
+
+      return ret;
+    }
+  }
+
+  /* Not Found! */
+  return NULL;
+}
+  
+
+/**
+ * int Response_addRecord(uint16_t, const void*, size_t)
+ * @param protocol: Identifier for the record in Host Byte Order
+ * @param record: Buffer to the record, a copy is made.
+ * @param recordLen: Length of the record buffer.
+ * @return: 0 on success, -1 on failure.
+ **/
+int Response_addRecord(Response_T response, uint16_t protocol, const void* record) {
+  int i;
+  struct record* tmp;
+  const uint16_t* buf;
+  assert(response != NULL);
+  assert(record != NULL);
+
+  buf = record;
+
+  for (i = 0; i < response->recordCount; i++) {
+    if (response->records[i].protocol == protocol) return -1;
+  }
+
+  tmp = realloc(response->records, response->recordCount * sizeof(struct record));
+  if (tmp == NULL) return -1;
+
+  response->records = tmp;
+
+  tmp = &(response->records[response->recordCount]);
+  tmp->protocol = ntohs(*buf);
+  buf++;
+  tmp->length = ntohs(*buf);
+  buf++;
+  memcpy(tmp->encrypted, buf, tmp->length);
+  buf = (const uint16_t*)((uint8_t*)buf + tmp->length);
+  tmp->ttl = ntohs(*buf);
+  buf++;
+  tmp->timestamp = (int64_t)ntohll(*(uint64_t*)buf);
+
+  return 0;
+}
+
+
 /* Serialize Functions */
 
 /**

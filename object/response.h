@@ -44,6 +44,23 @@ int Response_recordCount(Response_T response);
 int Response_merge(Response_T dest, Response_T src);
 
 /**
+ * const void* Response_getRecord(uint16_t, size_t)
+ * @param protocol: identifies the record, in Host Byte Order
+ * @param length: overwritten with the return buffer's length
+ * @return a constant buffer for the record
+ **/
+const void* Response_getRecord(Response_T response, uint16_t protocol, size_t* length);
+
+/**
+ * int Response_addRecord(uint16_t, const void*, size_t)
+ * @param protocol: Identifier for the record in Host Byte Order
+ * @param record: Buffer to the record, a copy is made.
+ * @param recordLen: Length of the record buffer.
+ * @return: 0 on success, -1 on failure.
+ **/
+int Response_addRecord(Response_T response, uint16_t protocol, const void* record);
+
+/**
  * void Response_free(Response_T)
  * De-allocated all resources associated with @param response
  **/
