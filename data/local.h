@@ -24,7 +24,7 @@ int Local_init(const char* configFile);
  * @return Case 2: If the hash is an address, return the encrypted <handle>@<host>
  * @return NULL on miss
  **/
-const char* Local_get(char hash[SHA256_SIZE], uint16_t protocol);
+const char* Local_get(char hash[SHA256_SIZE], uint16_t protocol, size_t* encLen);
 
 /**
  * char* Local_getPubkey(void)
@@ -39,7 +39,7 @@ const char* Local_getPubkey(void);
 const char* Local_getPrivkey(void);
 
 /**
- * int Local_getTTL(char[32])
+ * int Local_getTTL(char[32], uint16_t)
  * @param hash: The <handle>@<host> entry associated with the TTL
  * @return The TTL of all records at this hash in seconds.
  **/

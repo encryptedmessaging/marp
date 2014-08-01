@@ -61,6 +61,13 @@ const void* Response_getRecord(Response_T response, uint16_t protocol, size_t* l
 int Response_addRecord(Response_T response, uint16_t protocol, const void* record);
 
 /**
+ * int Response_buildRecord(Response_T, uint16_t, char*, size_t, int)
+ * Uses all parameters to build a record and add it to the response.
+ * @return: 0 on success, -1 on failure
+ **/
+int Response_buildRecord(Response_T response, uint16_t protocol, const char* encrypted, uint16_t encLen, uint16_t ttl);
+
+/**
  * void Response_free(Response_T)
  * De-allocated all resources associated with @param response
  **/

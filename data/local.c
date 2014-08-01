@@ -49,7 +49,7 @@ struct sHost {
   /* TTL for entire hostname, used if section has no TTL entry */
   int hostTTL;
   /* Name of the current section (handle) */
-  const char* currentSection;
+  char* currentSection;
   /* Name of the Section TTL (good until the next TTL or next Section */
   int sectionTTL;
 };
@@ -57,7 +57,7 @@ struct sHost {
 typedef struct local *Local_T;
 
 /* AO Object */
-static Local_T config = NULL;
+static Local_T config;
 
 /* Array of Protocols, Max 255 for now */
 #define PROTO_MAX 255
@@ -73,7 +73,7 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   char* id;
   entry* newEntry;
   entry* dummy;
-  uint8_t key[SHA256_SIZE];
+  uint8_t key[SHA256_SIZE] = {0};
   OAES_CTX * ctx;
   struct sHost* host = (struct sHost*)hostPtr;
 
@@ -88,9 +88,20 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   }
 
   /* Clear TTL on Section Change */
-  if (strcmp(host->currentSection, section) != 0) {
-    host->currentSection = section;
+  if (host->currentSection == NULL) {
+    host->currentSection = calloc(strlen(section) + 1, sizeof(char));
+    if (host->currentSection == NULL) return -1; 
+    strcpy(host->currentSection, section);
     host->sectionTTL = 0;
+  }
+
+  if (strcmp(host->currentSection, section) != 0) {
+    free(host->currentSection);
+    host->currentSection = calloc(strlen(section) + 1, sizeof(char));
+    if (host->currentSection == NULL) return -1;
+    strcpy(host->currentSection, section);
+    host->sectionTTL = 0;
+
   }
 
   /* Check for TTL Change */
@@ -120,11 +131,11 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
     free(id); return -1;
   }
 
-  (void)strcat(handleAtHost, section);
-  (void)strcat(handleAtHost, "@");
-  (void)strcat(handleAtHost, host->host);
+  strcat(handleAtHost, section);
+  strcat(handleAtHost, "@");
+  strcat(handleAtHost, host->host);
 
-  sha256_simple((uint8_t*)handleAtHost, strlen(handleAtHost), key);
+  sha256_simple((uint8_t*)handleAtHost, strlen(handleAtHost), (uint8_t*)key);
   sha256_simple(key, SHA256_SIZE, (uint8_t*)id);
   memcpy(&(id[SHA256_SIZE]), &protocol, sizeof(uint16_t));
   free(handleAtHost);
@@ -139,8 +150,8 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
 
   ctx = oaes_alloc();
 
-  oaes_key_import_data(ctx, key, SHA256_SIZE);
-  oaes_encrypt(ctx, (const uint8_t*)value, strlen(value), NULL, &(newEntry->encLen));
+  (void)oaes_key_import_data(ctx, key, SHA256_SIZE);
+  (void)oaes_encrypt(ctx, (const uint8_t*)value, strlen(value), NULL, &(newEntry->encLen));
   newEntry->encrypted = calloc(newEntry->encLen, sizeof(char));
   if (newEntry->encrypted == NULL) {
     free(newEntry->id);
@@ -227,7 +238,7 @@ static int handler(void* nada, const char* section, const char* name, const char
 
   /* Host Configuration */
   host.host = section;
-  host.currentSection = "";
+  host.currentSection = NULL;
   host.hostTTL = 0;
   host.sectionTTL = 0;
   
@@ -239,6 +250,9 @@ static int handler(void* nada, const char* section, const char* name, const char
     fprintf(stderr, "%s: Error parsing host file %s: %s", programName, value, strerror(errno));
     fprintf(stderr, "Already-Parsed entries are still in local cache.");
   }
+
+  /* Cleanup Host Configuration */
+  free(host.currentSection);
 
   return 0;
 } 
@@ -273,7 +287,7 @@ int Local_init(const char* configFile) {
  * @return Case 2: If the hash is an address, return the plaintext <handle>@<host>
  * @return NULL on miss
  **/
-const char* Local_get(char hash[SHA256_SIZE], uint16_t protocol) {
+const char* Local_get(char hash[SHA256_SIZE], uint16_t protocol, size_t* encLen) {
   entry* record;
   char* getID;
 
@@ -291,6 +305,7 @@ const char* Local_get(char hash[SHA256_SIZE], uint16_t protocol) {
     return NULL;
   }
 
+  *encLen = record->encLen;
   return record->encrypted;
 }
 

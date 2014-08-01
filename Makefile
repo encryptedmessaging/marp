@@ -30,6 +30,10 @@ oaes/liboaes_lib.a:
 marpd: data/inih/ini.o marpd.o frame.o signal.o network/socket.o object/query.o object/response.o data/cache.o data/local.o network/peers.o network/recursor.o sha256.o oaes/liboaes_lib.a
 	$(CC) $< *.o */*.o $(LDFLAGS) -o $@
 
+# Debugging Targets
+splint:
+	splint *.c */*.c +posixlib -I/usr/include/x86_64-linux-gnu -Ioaes/inc
+
 # Phony Targets
 clean:
 	make clean -C data/inih

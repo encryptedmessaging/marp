@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 /* Local Files */
 #include "frame.h"
@@ -177,15 +178,99 @@ enum {
  **/
 static void Frame_responseSTD(Frame_T frame, Frame_T response) {
   Query_T query;
+  Response_T resp;
+  const uint16_t* protocols;
+  uint16_t* protocolCopy;
+  const uint16_t* proto;
+  bool found = false;
+  uint8_t respHead[SHA256_SIZE + sizeof(uint16_t)];
+  int error, count;
+
+  count = error = 0;
+
   /* Parse Query */
   query = Query_init(frame->payload, frame->sHeader.length);
   if (query == NULL) {
     response->sHeader.op = kMAL;
     return;
   }
+  protocols = Query_protocols(query);
 
+  /* Create Response */
+  memset(respHead, 0x00, SHA256_SIZE + sizeof(uint16_t));
+  memcpy(respHead, Query_id(query), SHA256_SIZE);
   
-  
+  resp = Response_init(respHead, SHA256_SIZE + sizeof(uint16_t));
+  if (resp == NULL) {
+    response->sHeader.op = kMAL;
+    Query_free(query);
+    return;
+  }
+
+  /* First, Check Local Database for Results */
+  for (proto = protocols; *proto != 0; proto++) {
+    size_t len;
+    const char* encrypted;
+    
+    encrypted = Local_get((char*)respHead, *proto, &len);
+    if (encrypted != NULL) {
+      error = Response_buildRecord(resp, *proto, encrypted, (uint16_t)len, Local_getTTL((char*)respHead, *proto));
+      if (error < 0) {
+        Response_free(resp);
+        Query_free(query);
+        response->sHeader.op = kNTF;
+        return;
+      }
+      found = true;
+    }
+    count++;
+  }
+
+  if (found) {
+    /* Found in Local Database! Sign and Return */
+    response->sHeader.length = Response_size(resp);
+    /*error = Response_sign(resp, Local_getPrivkey()); */
+    response->payload = calloc(response->sHeader.length, sizeof(uint8_t));
+    if (response->payload == NULL || error < 0) {
+      if (response->payload) free(response->payload);
+      response->payload = NULL;
+      response->sHeader.length = 0;
+      response->sHeader.op = kNTF;
+    } else {
+      response->sHeader.aa = 1;
+      Response_serialize(resp, response->payload);
+    }
+
+    Response_free(resp);
+    Query_free(query);
+    return;
+  }
+
+  /* Only do cache check if client is okay with non-authoritative responses. */
+
+  if (!response->sHeader.aa) {
+    
+    /* Make a Defensive Copy of Protocol List */
+    protocolCopy = calloc(count, sizeof(uint16_t));
+    memcpy(protocolCopy, protocols, count * sizeof(uint16_t));
+    
+    /* Check Cache */
+    for (proto = protocolCopy; *proto != 0; proto++) {
+      size_t len;
+      const void* record = NULL;
+      record = Cache_get((char*)respHead, *proto, &len);
+      if (record != NULL) {
+        Response_addRecord(resp, *proto, record);
+        Query_rmProtocol(query, *proto);
+      }
+    }
+
+    /* If we covered all the protocols, return! */
+    protocols = Query_protocols(query);
+    if (*protocols == 0) {
+      return;
+    }
+  }
   Query_free(query);
   return;
 }

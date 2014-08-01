@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
 #include "response.h"
 
@@ -327,6 +328,29 @@ const void* Response_getRecord(Response_T response, uint16_t protocol, size_t* l
   return NULL;
 }
   
+/**
+ * int Response_buildRecord(Response_T, uint16_t, char*, size_t, int)
+ * Uses all parameters to build a record and add it to the response.
+ * @return: 0 on success, -1 on failure
+ **/
+int Response_buildRecord(Response_T response, uint16_t protocol, const char* encrypted, uint16_t encLen, uint16_t ttl) {
+  struct record* tmp;
+  assert(response != NULL);
+  assert(encrypted != NULL);
+
+  tmp = realloc(response->records, (response->recordCount + 1) * sizeof(struct record));
+  if (tmp == NULL) return -1;
+
+  response->records[response->recordCount].protocol = protocol;
+  response->records[response->recordCount].length = encLen;
+  memcpy(response->records[response->recordCount].encrypted, encrypted, encLen);
+  response->records[response->recordCount].ttl = ttl;
+  response->records[response->recordCount].timestamp = (int64_t)time(NULL);
+
+  response->recordCount++;
+
+  return 0;
+}
 
 /**
  * int Response_addRecord(uint16_t, const void*, size_t)
