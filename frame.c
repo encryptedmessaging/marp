@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <time.h>
 
 /* Local Files */
 #include "frame.h"
@@ -51,6 +52,42 @@ Frame_T Frame_init(void) {
   ret = calloc(1, sizeof(struct frame));
   return ret;
 } /* Frame_init() */
+
+/**
+ * Frame_T Frame_buildQuery(int, int, const void*, size_t)
+ * @param authoritative: Only accept authoritative responses
+ * @param recurseDepth: How many nodes to recurse to, 0 to disable
+ * @param payload: buffer to send
+ * @param payLen: Length of @param payload
+ * @return a new Frame, or NULL on failure
+ **/
+Frame_T Frame_buildQuery(int authoritative, int recurseDepth, const void* payload, size_t payLen) {
+  Frame_T ret = Frame_init();
+  if (ret == NULL) return NULL;
+
+  ret->payload = calloc(payLen, sizeof(uint8_t));
+  if (ret->payload == NULL) {
+    free(ret); return NULL;
+  }
+
+  ret->sHeader.length = payLen;
+  memcpy(ret->payload, payload, ret->sHeader.length);
+
+  ret->sHeader.version = 1;
+  if (authoritative) ret->sHeader.aa = 1;
+  ret->sHeader.recurse = recurseDepth;
+  if (recurseDepth) ret->sHeader.rd = 1;
+
+  ret->sHeader.qr = 1;
+  ret->sHeader.op = 0; /* Standard Query */
+
+  /* Randomly Generate QID */
+  srand(time(NULL));
+
+  ret->sHeader.qid = rand();
+
+  return ret;
+}
 
 /**
  * int Frame_listen(Frame_T, Socket_T)
