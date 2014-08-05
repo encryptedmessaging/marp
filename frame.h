@@ -31,6 +31,16 @@ typedef struct frame *Frame_T;
 Frame_T Frame_init(void);
 
 /**
+ * Frame_T Frame_buildQuery(int, int, const void*, size_t)
+ * @param authoritative: Only accept authoritative responses
+ * @param recurseDepth: How many nodes to recurse to, 0 to disable
+ * @param payload: buffer to send
+ * @param payLen: Length of @param payload
+ * @return a new Frame, or NULL on failur
+ **/
+Frame_T Frame_buildQuery(int authoritative, int recurseDepth, const void* payload, size_t payLen);
+
+/**
  * int Frame_listen(Frame_T, Socket_T)
  * Block until a new frame is received via the socket over the network.
  * @param dest: Frame to fill, all contents will be overwritten

@@ -5,9 +5,10 @@ CC=gcc
 CFLAGS=-pthread -m64 -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes -Ioaes/inc
 DEVFLAGS=-O3 -DNDEBUG
 LDFLAGS=-Loaes -loaes_lib -lpthread
+OBJECTS=data/inih/ini.o marpd.o frame.o signal.o network/socket.o object/query.o object/response.o data/cache.o data/local.o network/peers.o network/recursor.o sha256.o oaes/liboaes_lib.a
 
-# Object Files
-%.o: %.c
+# Basic .o Targets
+%.o: %.c %.h
 	$(CC) $(CFLAGS) $(DEVFLAGS) -c $< -o $@
 
 # Main Targets
@@ -15,6 +16,16 @@ all: marpd
 
 dev: DEVFLAGS=-O0 -g
 dev: all
+
+marpd: $(OBJECTS)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+
+# Specific Object Files
+marpd.o: marpd.c frame.h signal.h network/socket.h network/peers.h data/cache.h data/local.h
+	$(CC) $(CFLAGS) $(DEVFLAGS) -c $< -o $@
+
+frame.o: frame.c frame.h network/socket.h
+	$(CC) $(CFLAGS) $(DEVFLAGS) -c $< -o $@
 
 data/inih/inih.o:
 	make default -C data/inih
@@ -27,9 +38,6 @@ oaes/liboaes_lib.a:
 	cd oaes; cmake .
 	make -C oaes
 
-marpd: data/inih/ini.o marpd.o frame.o signal.o network/socket.o object/query.o object/response.o data/cache.o data/local.o network/peers.o network/recursor.o sha256.o oaes/liboaes_lib.a
-	$(CC) $< *.o */*.o $(LDFLAGS) -o $@
-
 # Debugging Targets
 splint:
 	splint *.c */*.c +posixlib -I/usr/include/x86_64-linux-gnu -Ioaes/inc
@@ -38,8 +46,7 @@ splint:
 clean:
 	make clean -C data/inih
 	rm -rf marpd
-	rm -rf *.o
-	rm -rf */*.o
+	rm -rf $(OBJECTS)
 
 clobber: clean
 	make clean -C oaes
