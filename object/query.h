@@ -21,6 +21,13 @@ typedef struct query *Query_T;
 Query_T Query_init(void* buf, size_t bufLen);
 
 /**
+ * Query_T Query_build(char*)
+ * @param handleAtHost: string "handle@host" without quotes
+ * @return an empty query for that string, no protocols
+ **/
+Query_T Query_build(char* handleAtHost);
+
+/**
  * char[32] Query_id(Query_T)
  * @param query: to get the ID of
  * @return the 32-byte hash associated with this query.
