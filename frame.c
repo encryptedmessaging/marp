@@ -18,6 +18,7 @@
 
 #define FRAME_MAX 512
 #define LOCAL_VERSION 1
+#define PEER_MAX 10
 
 extern char* programName;
 
@@ -268,9 +269,85 @@ static void Frame_responseSTD(Frame_T frame, Frame_T response) {
     /* If we covered all the protocols, return! */
     protocols = Query_protocols(query);
     if (*protocols == 0) {
+      response->sHeader.length = Response_size(resp);
+      response->payload = calloc(response->sHeader.length, sizeof(uint8_t));
+      if (response->payload == NULL || error < 0) {
+        if (response->payload) free(response->payload);
+        response->payload = NULL;
+        response->sHeader.length = 0;
+        response->sHeader.op = kNTF;
+      } else {
+        Response_serialize(resp, response->payload);
+      }
+
+      Response_free(resp);
+      Query_free(query);
       return;
     }
   }
+
+  /* If not in the Local File or the Cache, recurse the request if requested */
+  if (frame->sHeader.rd && frame->sHeader.recurse) {
+    uint8_t* recBuf;
+    size_t newRespLen;
+    Recursor_T recursor;
+
+    frame->sHeader.recurse--;
+    frame->sHeader.length = Query_size(query);
+    
+    
+    /* Serialize and Recurse */
+    recBuf = calloc(sizeof(struct header) + frame->sHeader.length, sizeof(uint8_t));
+    if (recBuf == NULL) {
+      Response_free(resp);
+      Query_free(query);
+      response->sHeader.op = kNTF;
+      return;
+    }
+    memcpy(recBuf, &(frame->sHeader), sizeof(struct header));
+    Query_serialize(query, recBuf + sizeof(struct header));
+
+    recursor = Recursor_init(recBuf, sizeof(struct header) + frame->sHeader.length, PEER_MAX, frame->sHeader.recurse + 1);
+    free(recBuf);
+    if (recursor == NULL) {
+      Response_free(resp);
+      Query_free(query);
+      response->sHeader.op = kNTF;
+      return;
+    }
+    while((recBuf = (uint8_t*)Recursor_poll(recursor, &newRespLen)) != NULL) {
+      Frame_T f;
+      Response_T src;
+      f = calloc(1, sizeof(struct frame));
+      if (f == NULL) continue;
+      memcpy(recBuf, &(f->sHeader), sizeof(struct header));
+      f->payload = recBuf + sizeof(struct header);
+      if (f->sHeader.op != kSTD || f->sHeader.z || f->sHeader.qid != frame->sHeader.qid) {
+        free(f); continue;
+      }
+      
+      src = Response_init(f->payload, f->sHeader.length);
+      if (src == NULL) {
+        free(f); continue;
+      }
+
+      Response_merge(resp, src);
+    }
+  }
+
+  /* Serialize Response, Cleanup, and Return */
+  response->sHeader.length = Response_size(resp);
+  response->payload = calloc(response->sHeader.length, sizeof(uint8_t));
+  if (response->payload == NULL || error < 0) {
+    if (response->payload) free(response->payload);
+    response->payload = NULL;
+    response->sHeader.length = 0;
+    response->sHeader.op = kNTF;
+  } else {
+    Response_serialize(resp, response->payload);
+  }
+
+  Response_free(resp);
   Query_free(query);
   return;
 }
