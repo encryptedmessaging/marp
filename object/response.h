@@ -90,4 +90,13 @@ size_t Response_size(Response_T response);
  **/
 size_t Response_serialize(Response_T response, void* buffer);
 
+/**
+ * void Response_printDecrypted(Response_T, char[SHA256_SIZE])
+ * Prints information on all records of this response to standard out
+ * @param response: to print
+ * @param key: Used to decrypt all records
+ * @return None
+ **/
+void Response_printDecrypted(Response_T response, char key[SHA256_SIZE]);
+
 #endif

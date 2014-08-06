@@ -34,7 +34,7 @@ Query_T Query_init(void* buf, size_t bufLen) {
   Query_T ret;
   int count = 0;
   int i;
-  uint16_t *readBuf;
+  uint16_t *readBuf, *numBuf;
 
   if (bufLen < SHA256_SIZE) {
     return NULL;
@@ -53,6 +53,7 @@ Query_T Query_init(void* buf, size_t bufLen) {
   (void)memcpy(&(ret->hash), buf, SHA256_SIZE);
   readBuf += SHA256_SIZE / sizeof(uint16_t);
 
+  numBuf = readBuf;
   while (*readBuf != 0) {
     count++;
     bufLen -= sizeof(uint16_t);
@@ -82,13 +83,11 @@ Query_T Query_init(void* buf, size_t bufLen) {
     free(ret->host);
     return NULL;
   }
-
-  i = 0;
-  for (readBuf = (uint16_t*)buf; *readBuf != 0; readBuf++) {
-    ret->host[i] = ntohs(*readBuf);
-    i++;
+  
+  for (i = 0; i < count; i++) {
+    ret->protocols[i] = ntohs(numBuf[i]);
   }
-
+  
   /* Set size */
   ret->size = SHA256_SIZE + bufLen + (count * sizeof(uint16_t));
 

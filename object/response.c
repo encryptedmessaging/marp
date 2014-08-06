@@ -12,9 +12,12 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#include <stdio.h>
+#include <oaes_lib.h>
 
 #include "response.h"
 
+extern char* programName;
 /**
  * Convert uint64_t from host to network byte order and back
  **/
@@ -118,6 +121,11 @@ Response_T Response_init(void* buf, size_t bufLen) {
 
     /* Encrypted Data */
     if (bufLen < ret->records[i].length) {
+      Response_free(ret);
+      return NULL;
+    }
+    ret->records[i].encrypted = calloc(ret->records[i].length, sizeof(char));
+    if (ret->records[i].encrypted == NULL) {
       Response_free(ret);
       return NULL;
     }
@@ -341,6 +349,11 @@ int Response_buildRecord(Response_T response, uint16_t protocol, const char* enc
   tmp = realloc(response->records, (response->recordCount + 1) * sizeof(struct record));
   if (tmp == NULL) return -1;
 
+  response->records[response->recordCount].encrypted = calloc(encLen, sizeof(char));
+  if (response->records[response->recordCount].encrypted == NULL) {
+    free(tmp); return -1;
+  }
+
   response->records[response->recordCount].protocol = protocol;
   response->records[response->recordCount].length = encLen;
   memcpy(response->records[response->recordCount].encrypted, encrypted, encLen);
@@ -452,3 +465,44 @@ size_t Response_serialize(Response_T response, void* buffer) {
 
   return Response_size(response);
 } /* End Response_serialize() */
+
+void Response_printDecrypted(Response_T response, char key[SHA256_SIZE]) {
+  OAES_CTX *ctx;
+  int i;
+  size_t decryptLen;
+  char* decrypted;
+
+  assert(response != NULL);
+  assert(key != NULL);
+  
+  ctx = oaes_alloc();
+  
+  (void)oaes_key_import_data(ctx, (uint8_t*)key, SHA256_SIZE);
+
+  printf("%d Records Processed\n\n", response->recordCount);
+
+  for(i=0; i<response->recordCount; i++) {
+    struct tm* tm_info;
+    char timeBuffer[25];
+    printf("Record %d:\n", i);
+
+    tm_info = localtime(&(response->records[i].timestamp));
+    strftime(timeBuffer, 25, "%Y:%m:%d%H:%M:%S", tm_info);
+
+    printf("Protocol: %d\n", response->records[i].protocol);
+    printf("TTL: %d seconds\n",response->records[i].ttl);
+    printf("Timestamp: %s\n", timeBuffer);
+
+    (void)oaes_decrypt(ctx, (const uint8_t*)response->records[i].encrypted, response->records[i].length, NULL, &(decryptLen));
+    decrypted = calloc(decryptLen, sizeof(char));
+    if (decrypted == NULL) {
+      fprintf(stderr, "%s: Response_printDecrypted: Out of Memory\n", programName);
+      return;
+    }
+    (void)oaes_decrypt(ctx, (const uint8_t*)response->records[i].encrypted, response->records[i].length, (uint8_t*)decrypted, &decryptLen);
+
+    printf("Answer: %s\n\n", decrypted);
+    free(decrypted);
+    decrypted = NULL;
+  }
+}

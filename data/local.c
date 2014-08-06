@@ -166,7 +166,7 @@ static int hostHandler(void* hostPtr, const char* section, const char* name, con
   else newEntry->ttl = host->hostTTL;
 
   /* Store Entry in Hash Table */
-  HASH_REPLACE(hh, config->localCache, id[0], sizeof(entry), newEntry, dummy);
+  HASH_REPLACE(hh, config->localCache, id[0], SHA256_SIZE + sizeof(uint16_t), newEntry, dummy);
   if (dummy != NULL) {
     free(dummy->id);
     free(dummy);

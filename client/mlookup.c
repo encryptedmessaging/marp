@@ -8,12 +8,14 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 /* Local Files */
 #include "../network/socket.h"
 #include "../frame.h"
 #include "../object/query.h"
 #include "../object/response.h"
+#include "../libsha2/sha256.h"
 
 /* External Required Variables */
 char* programName;
@@ -32,9 +34,12 @@ int main(int argc, char** argv) {
   Query_T query;
   Frame_T frame;
   Socket_T socket;
+  Response_T response;
   uint16_t protocol;
   int error, querySize;
+  uint16_t respLen;
   void* byteBuf;
+  char key[SHA256_SIZE];
   const char *handleAtHost, *server;
 
   /* Parse Command Line Arguments */
@@ -49,6 +54,8 @@ int main(int argc, char** argv) {
   protocol = (uint16_t)atoi(argv[2]);
   if (argc == 4) server = argv[3];
   else server = LOCALHOST;
+
+  sha256_simple((const uint8_t*)handleAtHost, strlen(handleAtHost), (uint8_t*)key);
 
   /* Construct Request Frame */
   socket = Socket_init(0); /* Unbound Socket */
@@ -119,9 +126,26 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
+  free(byteBuf);
+  byteBuf = NULL;
+  
+  /* Print Response */
+  Frame_printInfo(frame);
+  byteBuf = (uint8_t*)Frame_getPayload(frame, &respLen);
+
+  if (respLen > 0) {
+    response = Response_init(byteBuf, respLen);
+    if (response == NULL) {
+      Socket_free(socket);
+      Frame_free(frame);
+      Query_free(query);
+      return EXIT_FAILURE;
+    }
+    Response_printDecrypted(response, key);
+  }
+
   Socket_free(socket);
   Frame_free(frame);
   Query_free(query);
-  free(byteBuf);
   return EXIT_SUCCESS;
 }

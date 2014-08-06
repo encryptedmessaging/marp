@@ -92,6 +92,19 @@ Frame_T Frame_buildQuery(int authoritative, int recurseDepth, const void* payloa
 }
 
 /**
+ * const uint8_t Frame_getPayload(Frame_T, uint16_t*)
+ * @param frame: To get the payload, can't be NULL
+ * @param len: Value Parameter, overwritten with length of payload
+ * @return pointer to the payload buffer
+ **/
+const uint8_t* Frame_getPayload(Frame_T frame, uint16_t* len) {
+  assert(frame != NULL);
+
+  *len = frame->sHeader.length;
+  return frame->payload;
+}
+
+/**
  * int Frame_listen(Frame_T, Socket_T)
  * Block until a new frame is received via the socket over the network (or timeout is reached).
  * @param dest: Frame to fill, all contents will be overwritten
@@ -130,7 +143,7 @@ int Frame_listen(Frame_T dest, Socket_T socket, int timeout) {
   
   /* Fill Frame */
   memcpy(&(dest->sHeader), buf, HEADER);
-  payload = buf + sizeof(dest->sHeader);
+  payload = buf + HEADER;
   memcpy(dest->payload, payload, error - HEADER);
 
   free(buf);
@@ -196,13 +209,13 @@ int Frame_send(Frame_T frame, Socket_T socket, const char* ip, uint16_t port) {
   assert(frame != NULL);
   assert(socket != NULL);
 
-  buf = calloc(sizeof(struct header) + frame->sHeader.length, sizeof(char));
+  buf = calloc(HEADER + frame->sHeader.length, sizeof(char));
   if (buf == NULL) return -1;
 
-  memcpy(buf, &(frame->sHeader), sizeof(struct header));
-  memcpy(buf + sizeof(struct header), frame->payload, frame->sHeader.length);
+  memcpy(buf, &(frame->sHeader), HEADER);
+  memcpy(buf + HEADER, frame->payload, frame->sHeader.length);
 
-  return Socket_write(socket, ip, port, buf, sizeof(struct header) + frame->sHeader.length);
+  return Socket_write(socket, ip, port, buf, HEADER + frame->sHeader.length);
 }
 
 /**
@@ -395,6 +408,14 @@ static void Frame_responseSTD(Frame_T frame, Frame_T response) {
     }
   }
 
+  /* If the Record Count is 0, Return NTF */
+  if (Response_recordCount(resp) == 0) {
+    Response_free(resp);
+    Query_free(query);
+    response->sHeader.op = kNTF;
+    return;
+  }
+
   /* Serialize Response, Cleanup, and Return */
   response->sHeader.length = Response_size(resp);
   response->payload = calloc(response->sHeader.length, sizeof(uint8_t));
@@ -484,3 +505,50 @@ static void* Frame_thread(void* arg) {
   Frame_free(response);
   return ret;
 } /* End Frame_thread() */
+
+/**
+ * void Frame_printInfo(Frame_T)
+ * @param frame: To print
+ * @return None
+ **/
+void Frame_printInfo(Frame_T frame) {
+  putchar('\n');
+  puts("Frame Information:");
+
+  printf("Protocol Version %d\n", frame->sHeader.version);
+  printf("Frame ID: %d\n", frame->sHeader.qid);
+  if (frame->sHeader.qr) fputs("Query Type: ", stdout);
+  else fputs("Response Type: ", stdout);
+  
+  switch(frame->sHeader.op) {
+  case kSTD:
+    puts("Standard");
+    break;
+  case kREV:
+    puts("Reverse");
+    break;
+  case kNTF:
+    puts("Not Found");
+    break;
+  case kMAL:
+    puts("Server Error");
+    break;
+  case kPER:
+    puts("Peer List");
+    break;
+  case kPNG:
+    puts("Ping");
+    break;
+  default:
+    puts("Unknown");
+  }
+
+  
+  if (frame->sHeader.aa) puts("Authoritative: Yes");
+  else puts("Authoritative: No");
+
+  if (frame->sHeader.rd)
+    printf("Recursion requested to depth %d.", frame->sHeader.recurse);
+
+  putchar('\n');
+}

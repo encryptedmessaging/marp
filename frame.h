@@ -41,6 +41,21 @@ Frame_T Frame_init(void);
 Frame_T Frame_buildQuery(int authoritative, int recurseDepth, const void* payload, size_t payLen);
 
 /**
+ * const uint8_t Frame_getPayload(Frame_T, uint16_t*)
+ * @param frame: To get the payload, can't be NULL
+ * @param len: Value Parameter, overwritten with length of payload
+ * @return pointer to the payload buffer
+ **/
+const uint8_t* Frame_getPayload(Frame_T frame, uint16_t* len);
+
+/**
+ * void Frame_printInfo(Frame_T)
+ * @param frame: To print
+ * @return None
+ **/
+void Frame_printInfo(Frame_T frame);
+
+/**
  * int Frame_listen(Frame_T, Socket_T)
  * Block until a new frame is received via the socket over the network.
  * @param dest: Frame to fill, all contents will be overwritten
