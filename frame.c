@@ -471,6 +471,7 @@ static void* Frame_thread(void* arg) {
     free(response);
     Frame_free(frame);
     Frame_free(response);
+    free(arg);
     return ret;
   }
 
@@ -503,6 +504,8 @@ static void* Frame_thread(void* arg) {
 
   Frame_free(frame);
   Frame_free(response);
+  free(resBuf);
+  free(arg);
   return ret;
 } /* End Frame_thread() */
 

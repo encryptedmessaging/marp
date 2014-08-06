@@ -362,6 +362,7 @@ int Response_buildRecord(Response_T response, uint16_t protocol, const char* enc
 
   response->recordCount++;
 
+  free(tmp);
   return 0;
 }
 
