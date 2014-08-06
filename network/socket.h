@@ -55,7 +55,7 @@ int Socket_respond(Socket_T socket, const void* buf, size_t len);
  * @param buf: data to write, minimum length 4 bytes
  * @param len: Length of the buffer
  **/
-int Socket_write(Socket_T socket, char* ip, uint16_t port, void* buf, size_t len);
+int Socket_write(Socket_T socket, const char* ip, uint16_t port, void* buf, size_t len);
 
 /**
  * void Socket_clearQID(Socket_T, uint32_t)

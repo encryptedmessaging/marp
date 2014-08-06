@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <assert.h>
+#include "../libsha2/sha256.h"
 
 #define SHA256_SIZE 32
 
@@ -72,7 +73,7 @@ Query_T Query_init(void* buf, size_t bufLen) {
     return NULL;
   }
 
-  memcpy(&(ret->host), (void*)readBuf, bufLen);
+  memcpy(ret->host, (void*)readBuf, bufLen);
 
   count++; /* Add terminating 0 */
   ret->protocols = calloc(count, sizeof(uint16_t));
@@ -100,7 +101,34 @@ Query_T Query_init(void* buf, size_t bufLen) {
  * @param handleAtHost: string "handle@host" without quotes
  * @return an empty query for that string, no protocols
  **/
-Query_T Query_build(char* handleAtHost) {
+Query_T Query_build(const char* handleAtHost) {
+  Query_T query;
+  char tmp[SHA256_SIZE];
+  const char* host;
+
+  if (handleAtHost == NULL) return NULL;
+  host = strstr(handleAtHost, "@");
+  if (host == NULL) return NULL;
+  host++;
+
+  query = calloc(1, sizeof(struct query));
+  if (query == NULL) return NULL;
+
+  query->protocols = calloc(1, sizeof(uint16_t));
+  sha256_simple((const uint8_t*)handleAtHost, strlen(handleAtHost), (uint8_t*)tmp);
+  sha256_simple((const uint8_t*)tmp, SHA256_SIZE, (uint8_t*)query->hash);
+  
+  query->host = calloc(strlen(host) + 1, sizeof(char));
+  if (query->host == NULL) {
+    free(query->protocols); free(query);
+    return NULL;
+  }
+  strcpy(query->host, host);
+
+  /* Set size */
+  query->size = SHA256_SIZE + strlen(query->host) + 1;
+  
+  return query;
 }
 
 /**

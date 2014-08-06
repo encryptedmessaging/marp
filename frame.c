@@ -20,6 +20,7 @@
 #define FRAME_MAX 512
 #define LOCAL_VERSION 1
 #define PEER_MAX 10
+#define HEADER 9
 
 extern char* programName;
 
@@ -80,6 +81,7 @@ Frame_T Frame_buildQuery(int authoritative, int recurseDepth, const void* payloa
 
   ret->sHeader.qr = 1;
   ret->sHeader.op = 0; /* Standard Query */
+  ret->sHeader.version = 1;
 
   /* Randomly Generate QID */
   srand(time(NULL));
@@ -116,20 +118,20 @@ int Frame_listen(Frame_T dest, Socket_T socket, int timeout) {
   if (error < 0) {
     free(buf);
     return error;
-  } else if (error < sizeof(dest->sHeader)) {
+  } else if (error < HEADER) {
     fprintf(stderr, "%s: Received too small frame from socket.", programName);
   }
 
-  dest->payload = calloc(error - sizeof(dest->sHeader), sizeof(uint8_t));
+  dest->payload = calloc(error - HEADER, sizeof(uint8_t));
   if (dest->payload == NULL) {
     free(buf);
     return -1;
   }
   
   /* Fill Frame */
-  memcpy(buf, &(dest->sHeader), sizeof(dest->sHeader));
+  memcpy(&(dest->sHeader), buf, HEADER);
   payload = buf + sizeof(dest->sHeader);
-  memcpy(payload, &(dest->payload), error - sizeof(dest->sHeader));
+  memcpy(dest->payload, payload, error - HEADER);
 
   free(buf);
 
@@ -163,7 +165,7 @@ pthread_t* Frame_respond(Frame_T frame, Socket_T socket) {
 
   /* Version Check */
   if (frame->sHeader.version != LOCAL_VERSION) {
-    fprintf(stderr, "%s: Version %d not supported by this server!", programName, frame->sHeader.version);
+    fprintf(stderr, "%s: Version %d not supported by this server!\n", programName, frame->sHeader.version);
     return NULL;
   }
   
@@ -181,6 +183,27 @@ pthread_t* Frame_respond(Frame_T frame, Socket_T socket) {
   
   return thread;
 } /* End Frame_respond() */
+
+/**
+ * int Frame_send(Frame_T, Socket_T, const char* uint16_t)
+ * @param frame: To serialize and Send
+ * @param socket: use to send
+ * @param ip, port: Send to
+ * @return: @see Socket_write(), same return value
+ **/
+int Frame_send(Frame_T frame, Socket_T socket, const char* ip, uint16_t port) {
+  uint8_t* buf;
+  assert(frame != NULL);
+  assert(socket != NULL);
+
+  buf = calloc(sizeof(struct header) + frame->sHeader.length, sizeof(char));
+  if (buf == NULL) return -1;
+
+  memcpy(buf, &(frame->sHeader), sizeof(struct header));
+  memcpy(buf + sizeof(struct header), frame->payload, frame->sHeader.length);
+
+  return Socket_write(socket, ip, port, buf, sizeof(struct header) + frame->sHeader.length);
+}
 
 /**
  * void Frame_free(Frame_T)
@@ -400,7 +423,7 @@ static void* Frame_thread(void* arg) {
   Frame_T response;
   int *ret;
   int bad = 0;
-  void* resBuf;
+  uint8_t* resBuf;
   struct threadarg *args = arg;
 
   /* Fill Socket and Frame */
@@ -423,7 +446,7 @@ static void* Frame_thread(void* arg) {
   if (!frame->sHeader.qr) bad = 1;
   if (bad) {
     response->sHeader.op = kMAL;
-    *ret = Socket_respond(socket, &response->sHeader, sizeof(struct header));
+    *ret = Socket_respond(socket, &response->sHeader, HEADER);
     free(response);
     Frame_free(frame);
     Frame_free(response);
@@ -434,8 +457,10 @@ static void* Frame_thread(void* arg) {
   switch (frame->sHeader.op) {
   case kSTD: /* Standard Query */
     Frame_responseSTD(frame, response);
+    break;
   case kREV: /* TODO: Currently Unsupported */
     response->sHeader.op = kNTF;
+    break;
   case kPER:
     break;
   case kPNG:
@@ -445,11 +470,13 @@ static void* Frame_thread(void* arg) {
   }
 
   /* Serialize and Send Response */
-  resBuf = calloc(sizeof(struct header) + response->sHeader.length, sizeof(uint8_t));
+  resBuf = calloc(HEADER + response->sHeader.length, sizeof(uint8_t));
   if (resBuf == NULL) {
     response->sHeader.op = kNTF;
-    *ret = Socket_respond(socket, &response->sHeader, sizeof(struct header));
+    *ret = Socket_respond(socket, &(response->sHeader), HEADER);
   } else {
+    memcpy(resBuf, &(response->sHeader), HEADER);
+    memcpy(resBuf + HEADER, response->payload, response->sHeader.length);
     *ret = Socket_respond(socket, resBuf, sizeof(struct header) + response->sHeader.length);
   }
 

@@ -51,7 +51,7 @@ splint:
 # Phony Targets
 clean:
 	make clean -C data/inih
-	rm -rf marpd marpd.o client/mlookup.o
+	rm -rf marpd marpd.o mlookup client/mlookup.o
 	rm -rf $(OBJECTS)
 
 clobber: clean

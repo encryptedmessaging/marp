@@ -25,7 +25,7 @@ Query_T Query_init(void* buf, size_t bufLen);
  * @param handleAtHost: string "handle@host" without quotes
  * @return an empty query for that string, no protocols
  **/
-Query_T Query_build(char* handleAtHost);
+Query_T Query_build(const char* handleAtHost);
 
 /**
  * char[32] Query_id(Query_T)

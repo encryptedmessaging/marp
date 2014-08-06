@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "%s: main: Could not initialize socket.\n", programName);
     return EXIT_FAILURE;
   }
-  printf("%s: main: Server started on port %d...\n", programName, PORT);
+  printf("%s: main: Server started on port %d...\n\n", programName, PORT);
 
   fflush(stdout);
 
@@ -96,13 +96,14 @@ int main(int argc, char** argv) {
     /* Listen for incoming query on socket */
     error = Frame_listen(frame, socket, 1);
 
-    if (error || !isRunning) {
+    if (error < 0 || !isRunning) {
       Frame_free(frame);
     } else {
       /* Prepare Thread Pool */
+      printf("%s: main: Received new query...\n", programName);
       current = calloc(1, sizeof(struct thread_container));
       if (current == NULL || !isRunning) {
-        fprintf(stderr, "%s: Out of Memory", programName);
+        fprintf(stderr, "%s: Out of Memory\n", programName);
         Frame_free(frame);
         break;
       }
@@ -122,13 +123,15 @@ int main(int argc, char** argv) {
       current->thread = Frame_respond(frame, socket);
 
       if (current->thread == NULL) {
+        fprintf(stderr,"%s: main: Error starting new thread for frame.\n", programName);
         free(current);
         Frame_free(frame);
+      } else {
+        /* Add Thread to Thread Pool */
+        current->id = count;
+        HASH_ADD_INT(head, id, current);
       }
-
-      /* Add Thread to Thread Pool */
-      current->id = count;
-      HASH_ADD_INT(head, id, current);
+      putchar('\n');
     }
     count++;
     count %= MAX_THREAD;

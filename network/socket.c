@@ -120,14 +120,13 @@ int Socket_read(Socket_T socket, void* buf, size_t len, int timeout) {
   socklen = sizeof(*(kvqid->address));
 
   error = recvfrom(socket->socketfd, buf, len, 0, kvqid->address, &socklen);
-  if (error < sizeof(qid)) {
-    if (error < 0) perror(programName);
+  if (error < sizeof(qid) || error < 0) {
     free(kvqid->address);
     free(kvqid);
   } else {
     /* Load QID */
     memcpy(&qid, buf, sizeof(qid));
-    qid = ntohl(qid);
+    kvqid->qid = qid;
 
     /* Check if QID exists already. */
     k = NULL;
@@ -141,6 +140,7 @@ int Socket_read(Socket_T socket, void* buf, size_t len, int timeout) {
         return error;
       } else return -1;
     } else {
+      printf("%s: Registering new QID...\n", programName);
       HASH_ADD_INT(socket->hashmap, qid, kvqid);
     }
   }
@@ -173,10 +173,9 @@ int Socket_respond(Socket_T socket, const void* buf, size_t len) {
 
   /* Pull QID */
   memcpy(&qid, buf, sizeof(qid));
-  qid = ntohl(qid);
   HASH_FIND_INT(socket->hashmap, &qid, k);
   if (k == NULL) {
-    fprintf(stderr, "%s: Socket_respond(): QID not found, can't respond.", programName);
+    fprintf(stderr, "%s: Socket_respond(): QID not found, can't respond.\n", programName);
     return -1;
   }
 
@@ -206,7 +205,7 @@ int Socket_respond(Socket_T socket, const void* buf, size_t len) {
  * @param buf: data to write, minimum length 4 bytes
  * @param len: Length of the buffer
  **/
-int Socket_write(Socket_T socket, char* ip, uint16_t port, void* buf, size_t len) {
+int Socket_write(Socket_T socket, const char* ip, uint16_t port, void* buf, size_t len) {
   uint32_t qid;
   kvQid *k;
   int error;
@@ -237,7 +236,6 @@ int Socket_write(Socket_T socket, char* ip, uint16_t port, void* buf, size_t len
 
   /* Pull QID */
   memcpy(&qid, buf, sizeof(qid));
-  qid = ntohl(qid);
   HASH_FIND_INT(socket->hashmap, &qid, k);
   if (k == NULL) {
     k = malloc(sizeof(kvQid));

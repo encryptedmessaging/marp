@@ -46,7 +46,7 @@ Frame_T Frame_buildQuery(int authoritative, int recurseDepth, const void* payloa
  * @param dest: Frame to fill, all contents will be overwritten
  * @param socket: Where to listen for data. Must not be NULL.
  * @param timeout: How long to wait, set to 0 to disable.
- * @return: 0 on Success, -1 on Failure or Timeout
+ * @return: size ofr frame in bytes  on Success, -1 on Failure or Timeout
  **/
 int Frame_listen(Frame_T dest, Socket_T socket, int timeout);
 
@@ -59,6 +59,15 @@ int Frame_listen(Frame_T dest, Socket_T socket, int timeout);
  * @return: The pthread pointer on success, or NULL on failure.
  **/
 pthread_t* Frame_respond(Frame_T frame, Socket_T socket);
+
+/**
+ * int Frame_send(Frame_T, Socket_T, const char* uint16_t)
+ * @param frame: To serialize and Send
+ * @param socket: use to send
+ * @param ip, port: Send to
+ * @return: @see Socket_write(), same return value
+ **/
+int Frame_send(Frame_T frame, Socket_T socket, const char* ip, uint16_t port);
 
 /**
  * void Frame_free(Frame_T)
