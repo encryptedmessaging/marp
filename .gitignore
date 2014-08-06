@@ -1,4 +1,5 @@
 config/cache.dat
+config/id_ecc*
 *.o
 marpd
 mlookup

@@ -27,12 +27,6 @@ int Local_init(const char* configFile);
 const char* Local_get(char hash[SHA256_SIZE], uint16_t protocol, size_t* encLen);
 
 /**
- * char* Local_getPubkey(void)
- * @return Plaintext, base64-encoded ECC public key for this server.
- **/
-const char* Local_getPubkey(void);
-
-/**
  * char* Local_getPrivkey(void)
  * @return Plaintext, base64-encoded ECC private key for this server.
  **/

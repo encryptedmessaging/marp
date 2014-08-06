@@ -13,3 +13,6 @@
 [submodule "oaes"]
 	path = oaes
 	url = https://code.google.com/p/openaes/
+[submodule "micro-ecc"]
+	path = micro-ecc
+	url = https://github.com/kmackay/micro-ecc.git

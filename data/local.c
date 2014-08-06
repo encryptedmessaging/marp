@@ -3,19 +3,35 @@
  * Author: Ethan Gordon
  * Store and access data from the local .marp configuration file.
  **/
+#define _GNU_SOURCE
 #define SHA256_SIZE 32
 
+/* ECC Config */
+#define uECC_CURVE 3 /* P256 */
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <oaes_base64.h>
 #include <oaes_lib.h>
 
 #include "../uthash.h"
 #include "inih/ini.h"
 #include "../libsha2/sha256.h"
 #include "local.h"
+#include "../micro-ecc/uECC.h"
+
+
+#define KEY_SIZE 32
+#define PUB_SIZE 2*KEY_SIZE+1
+#define PUB_BASE64 89
+  
 
 /* Individual Local Entry, Placed in Hash Table */
 typedef struct entry {
@@ -36,9 +52,7 @@ typedef struct entry {
 struct local {
   /* Local HashTable Head, should be NULL */
   entry* localCache;
-  /* Base64-Encoded Public Key */
-  char* pubkey;
-  /* Base64-Encoded Private Key */
+  /* Private Key */
   char* privkey;
 };
 
@@ -65,6 +79,96 @@ static char** protocols;
 
 /* argv[0] from main */
 extern char* programName;
+
+static void Local_loadKey(const char* file) {
+  int error, fd, pubfd;
+  size_t dummy;
+  uint8_t privkey[KEY_SIZE];
+  uint8_t pubkey[PUB_SIZE];
+  char pubstr[PUB_BASE64 + 1];
+
+  char* pubFile;
+  if (config->privkey) { free(config->privkey); config->privkey = NULL; }
+
+  config->privkey = calloc(KEY_SIZE, sizeof(char));
+  if (config->privkey == NULL) {
+    fprintf(stderr, "%s: Local_loadKey: Out of Memory\n", programName);
+    exit(EXIT_FAILURE);
+  }
+
+  fd = open(file, O_RDONLY);
+  if (fd < 0) {
+    if (errno == ENOENT) {
+      printf("%s: Local_loadKey: Private key file not found, generating new...\n", programName);
+      /* Create new ECC keypair */
+      fd = creat(file, 0600);
+      if (fd < 0) {
+        fprintf(stderr, "%s: Local_loadKey: Could not create private key file... %s\n", programName, strerror(errno));
+        exit(EXIT_FAILURE);
+      }
+
+      pubkey[0] = 0x04;
+      error = uECC_make_key(&(pubkey[1]), privkey);
+      if (error == 0) {
+        fprintf(stderr, "%s: Local_loadKey: Could not make new key\n", programName);
+        exit(EXIT_FAILURE);
+      }
+
+      dummy = PUB_BASE64;
+      error = oaes_base64_encode(pubkey, PUB_SIZE, pubstr, &dummy);
+      pubstr[PUB_BASE64 + 1] = '\0';
+
+      if (error) {
+        fprintf(stderr, "%s: Local_loadKey: Could not base64 encode public key\n", programName);
+        exit(EXIT_FAILURE);
+      }
+
+      pubFile = calloc(strlen(file) + strlen(".pub") + 1, sizeof(char));
+      if (pubFile == NULL) {
+        fprintf(stderr,"%s: Local_loadKey: Out of Memory\n", programName);
+        exit(EXIT_FAILURE);
+      }
+      strcat(pubFile, file);
+      strcat(pubFile, ".pub");
+
+      pubfd = creat(pubFile, 0666);
+      if (pubfd < 0) {
+        fprintf(stderr, "%s: Local_loadKey: Could not create public key file %s... %s\n", programName, pubFile, strerror(errno));
+        exit(EXIT_FAILURE);
+      }
+
+      error = write(pubfd, pubstr, PUB_BASE64);
+      if (error < 0) {
+        fprintf(stderr, "%s: Local_loadKey: Could not write to public key file... %s\n", programName, strerror(errno));
+        exit(EXIT_FAILURE);
+      }
+
+      error = write(fd, privkey, KEY_SIZE);
+      if (error < 0) {
+        fprintf(stderr, "%s: Local_loadKey: Could not write to private key file... %s\n", programName, strerror(errno));
+        exit(EXIT_FAILURE);
+      }
+
+      printf("%s: Local_loadKey: Private Key saved to %s.\n", programName, file);
+      printf("%s: Local_loadKey: Public Key saved to %s.\n", programName, pubFile);
+      printf("%s: Local_loadKey: Add the following dns entry to make your marp server authoritative:\n", programName);
+      printf("%s: Local_loadKey: <host>\tIN\tTXT\tmarp:%s\n\n", programName, pubstr);
+      memcpy(config->privkey, privkey, KEY_SIZE);
+      return;
+    } else {
+      fprintf(stderr, "%s: Local_loadKey: Could not load private key... %s\n", programName, strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+  }
+  /* Read Private Key */
+  error = read(fd, config->privkey, KEY_SIZE);
+  if (error < KEY_SIZE) {
+    fprintf(stderr, "%s: Local_loadKey: Could not read private key... %s\n", programName, strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+  printf("%s: Local_loadKey: Private Key loaded from %s\n", programName, file);
+}
+
 
 /** Handlers **/
 static int hostHandler(void* hostPtr, const char* section, const char* name, const char* value) {
@@ -198,22 +302,11 @@ static int handler(void* nada, const char* section, const char* name, const char
   struct sHost host;
   /* Global Configuration */
   if (strcmp(section, "global") == 0) {
-    if (strcmp(name, "pubkey") == 0) {
-      if (config->pubkey) {
-        return -1;
-      } else {
-        config->pubkey = calloc(strlen(value) + 1, sizeof(char));
-        if (config->pubkey == NULL) return -1;
-        strcpy(config->pubkey, value);
-      }
-    }
     if (strcmp(name, "privkey") == 0) {
       if (config->privkey) {
         return -1;
       } else {
-        config->privkey = calloc(strlen(value) +1, sizeof(char));
-        if (config->privkey == NULL) return -1;
-        strcpy(config->privkey, value);
+        Local_loadKey(value);
       }
     }
     /* Names Configuration */
@@ -234,6 +327,7 @@ static int handler(void* nada, const char* section, const char* name, const char
         return -1;
       }
     }
+    return 0;
   }
 
   /* Host Configuration */
@@ -255,7 +349,7 @@ static int handler(void* nada, const char* section, const char* name, const char
   free(host.currentSection);
 
   return 0;
-} 
+}
 
 /**
  * int Local_init(const char*)
@@ -310,14 +404,6 @@ const char* Local_get(char hash[SHA256_SIZE], uint16_t protocol, size_t* encLen)
 }
 
 /**
- * char* Local_getPubkey(void)
- * @return Plaintext, base64-encoded ECC public key for this server.
- **/
-const char* Local_getPubkey(void) {
-  return config->pubkey;
-}
-
-/**
  * char* Local_getPrivkey(void)
  * @return Plaintext, base64-encoded ECC private key for this server.
  **/
@@ -368,7 +454,6 @@ void Local_destroy(void) {
 
   /* Free Config */
   if (config) {
-    if (config->pubkey) free(config->pubkey);
     if (config->privkey) free(config->privkey);
 
     HASH_ITER(hh, config->localCache, current, tmp) {

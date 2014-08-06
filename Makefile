@@ -5,7 +5,7 @@ CC=gcc
 CFLAGS=-pthread -m64 -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes -Ioaes/inc
 DEVFLAGS=-O3 -DNDEBUG
 LDFLAGS=-Loaes -loaes_lib -lpthread
-OBJECTS=data/inih/ini.o frame.o signal.o network/socket.o object/query.o object/response.o data/cache.o data/local.o network/peers.o network/recursor.o sha256.o oaes/liboaes_lib.a
+OBJECTS=data/inih/ini.o frame.o signal.o network/socket.o object/query.o object/response.o data/cache.o data/local.o network/peers.o network/recursor.o sha256.o oaes/liboaes_lib.a micro-ecc/uECC.o
 
 # Basic .o Targets
 %.o: %.c %.h
