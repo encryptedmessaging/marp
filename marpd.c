@@ -143,6 +143,7 @@ int main(int argc, char** argv) {
     int* response;
     HASH_DEL(head, current);
     pthread_join(*(current->thread), (void**)&response);
+    free(response);
     free(current->thread);
     free(current);
   }

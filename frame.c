@@ -457,7 +457,7 @@ static void* Frame_thread(void* arg) {
   /* Make Response Frame */
   response = malloc(sizeof(Frame_T));
   if (response == NULL) return ret;
-  *response = *frame;
+  memcpy(response, frame, sizeof(struct frame));
   response->sHeader.qr = 0; /* Response */
   response->sHeader.length = 0;
   response->payload = NULL;
@@ -471,7 +471,6 @@ static void* Frame_thread(void* arg) {
     free(response);
     Frame_free(frame);
     Frame_free(response);
-    free(arg);
     return ret;
   }
 
@@ -505,7 +504,6 @@ static void* Frame_thread(void* arg) {
   Frame_free(frame);
   Frame_free(response);
   free(resBuf);
-  free(arg);
   return ret;
 } /* End Frame_thread() */
 

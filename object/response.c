@@ -349,9 +349,11 @@ int Response_buildRecord(Response_T response, uint16_t protocol, const char* enc
   tmp = realloc(response->records, (response->recordCount + 1) * sizeof(struct record));
   if (tmp == NULL) return -1;
 
+  response->records = tmp;
+
   response->records[response->recordCount].encrypted = calloc(encLen, sizeof(char));
   if (response->records[response->recordCount].encrypted == NULL) {
-    free(tmp); return -1;
+    return -1;
   }
 
   response->records[response->recordCount].protocol = protocol;
@@ -362,7 +364,6 @@ int Response_buildRecord(Response_T response, uint16_t protocol, const char* enc
 
   response->recordCount++;
 
-  free(tmp);
   return 0;
 }
 
